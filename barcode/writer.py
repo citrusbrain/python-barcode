@@ -240,14 +240,15 @@ class SVGWriter(BaseWriter):
         self._group = None
 
     def _init(self, code):
-        width, height = self.calculate_size(len(code[0]), len(code), self.dpi)
+        self.code = code
+        # width, height = self.calculate_size(len(code[0]), len(code), self.dpi)
         self._document = create_svg_object()
         self._root = self._document.documentElement
-        attributes = {
-            'width': SIZE.format(width),
-            'height': SIZE.format(height),
-        }
-        _set_attributes(self._root, **attributes)
+        # attributes = {
+        #     'width': SIZE.format(width),
+        #     'height': SIZE.format(height),
+        # }
+        # _set_attributes(self._root, **attributes)
         self._root.appendChild(self._document.createComment(COMMENT))
         # create group for easier handling in 3rd party software
         # like corel draw, inkscape, ...
@@ -283,7 +284,19 @@ class SVGWriter(BaseWriter):
             barcodetext = self.human
         else:
             barcodetext = self.text
-        for subtext in barcodetext.split('\n'):
+        texts = barcodetext.split('\n')
+
+        width, height = self.calculate_size(len(self.code[0]), len(self.code) + len(texts), self.dpi)
+        attributes = {
+            'width': SIZE.format(width),
+            'height': SIZE.format(height),
+        }
+        _set_attributes(self._root, **attributes)
+
+        if self.strokes is None:
+            self.strokes = [0 for _ in texts]
+
+        for subtext, stroke in zip(texts, self.strokes):
             element = self._document.createElement('text')
             attributes = {
                 'x':
@@ -291,9 +304,10 @@ class SVGWriter(BaseWriter):
                 'y':
                 SIZE.format(ypos),
                 'style':
-                'fill:{0};font-size:{1}pt;text-anchor:middle;'.format(
+                'fill:{0};font-size:{1}pt;text-anchor:middle;stroke:#000000;stroke-width:{2};'.format(
                     self.foreground,
                     self.font_size,
+                    stroke
                 )
             }
             _set_attributes(element, **attributes)
